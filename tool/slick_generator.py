@@ -79,7 +79,7 @@ class %(class)sActor extends Actor {
             println(a)
             %(class)s.tupled(a)
           })
-          if (pdfs.length>0){
+          if (%(var)ss.length>0){
             self !("insert",%(var)ss)
           }else{
             //拿到底了
