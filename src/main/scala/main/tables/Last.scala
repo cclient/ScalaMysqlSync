@@ -3,7 +3,7 @@ package main.tables
 import java.sql.Date
 
 import akka.actor.Actor
-import main.tables.Conf._
+import main.Conf._
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.TableQuery
 
