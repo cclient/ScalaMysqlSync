@@ -3,6 +3,7 @@ package main.tables
 import java.sql.Date
 
 import akka.actor.Actor
+import main.Action.{BYOFFSET_OFFSET_FROM_HISTORY_RECORD, BYOFFSET_UPSERT_OFFSET,BYOFFSET_OFFSET_FROM_DESTTABLE,BYOFFSET_GET}
 import main.Conf._
 import slick.jdbc.MySQLProfile.api._
 import slick.lifted.TableQuery
@@ -42,7 +43,7 @@ class LastActor extends Actor {
     //      })
     //    }
     //得到记录的最大id,如果失败，则直接读目标表
-    case ("get", tablename: String) => {
+    case (BYOFFSET_OFFSET_FROM_HISTORY_RECORD, tablename: String) => {
       val send = sender()
       println(send.path)
       val lasts = TableQuery[Lasts]
@@ -53,24 +54,25 @@ class LastActor extends Actor {
         if (data.isSuccess && data.get.length > 0) {
           val last = Last.tupled(data.get.head)
           println("get lastid", last.id)
-          send ! ("lastbydest", last.id)
+          send ! (BYOFFSET_OFFSET_FROM_DESTTABLE, last.id)
         } else {
           println("don't get lastid")
-          send ! ("lastbydest", 0)
+          send ! (BYOFFSET_OFFSET_FROM_DESTTABLE, 0)
         }
       })
     }
 
-    case ("upsert", tablename: String, lastid: Int) => {
+    case (BYOFFSET_UPSERT_OFFSET, tablename: String, lastid: Int) => {
       val send = sender()
       val Last = TableQuery[Lasts]
       val updated = Last.insertOrUpdate((tablename, lastid, DEFAULT_DATE, DEFAULT_DATE))
       DEST_DB.run(updated).onComplete(data => {
         println(data)
         if (data.isSuccess) {
-          send ! ("sync", lastid)
+          send ! (BYOFFSET_GET, lastid)
         } else {
           println("upsert last error")
+          send ! (BYOFFSET_GET, lastid)
           //          sender() !("sync",false)
         }
       })

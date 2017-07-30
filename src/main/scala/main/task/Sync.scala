@@ -17,26 +17,11 @@ class Sync extends Actor {
   override def receive: Receive = {
     case MAIN_TASK_STOP => context.stop(self)
     case MAIN_TASK_START => {
-//      val questionactor = context.actorOf(Props[QuestionActor], "question")
-//      questionactor ! BYOFFSET_TASK_START
-//
-//      val answeractor = context.actorOf(Props[AnswerActor], "answer")
-//      answeractor ! BYOFFSET_TASK_START
-//
-//      val commentactor = context.actorOf(Props[CommentActor], "comment")
-//      commentactor ! BYOFFSET_TASK_START
-//
-//      val useractor = context.actorOf(Props[UserActor], "user")
-//      useractor ! BYOFFSET_TASK_START
-//
-//      val topic_selectionActoractor = context.actorOf(Props[Topic_selectionActor], "topic_selectionActor")
-//      topic_selectionActoractor ! ONCEALL_TASK_START
-//
-//      val boardactor = context.actorOf(Props[BoardActor], "board")
-//      boardactor ! ONCEALL_TASK_START
-//
-//      val sub_boardActoractor = context.actorOf(Props[Sub_boardActor], "sub_boardActor")
-//      sub_boardActoractor ! ONCEALL_TASK_START
+      val excelactor = context.actorOf(Props[ExcelActor], "excel")
+      excelactor ! BYOFFSET_TASK_START
+
+      val wordactor = context.actorOf(Props[WordActor], "word")
+      wordactor ! ONCEALL_TASK_START
     }
   }
 }

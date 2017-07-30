@@ -30,21 +30,21 @@ class %(class)sActor extends Actor {
   override def receive: Receive = {
     //  从这个id开始后移拿数
     case (BYOFFSET_GET,lastid:Int) => {
-      println("sync start by",lastid)
+      println("table "+tablename+"  sync start by",lastid)
       val %(var)ss = TableQuery[%(class)ss]
       //      val action=ORIGIN_DB.run(%(class)s.filter(_.id > lastid).take(PAGE_SIZE).result)
       val action=ORIGIN_DB.run(%(var)ss.filter(_.id > lastid).take(PAGE_SIZE).result)
       action.onComplete(data=>{
-        println("sync get data",data.get.length)
+        println("table "+tablename+"  sync get data",data.get.length)
         if (data.isSuccess){
           val %(var)ss=data.get.toList.map(a=>{
             %(class)s.tupled(a)
           })
           if (%(var)ss.length>0){
             Future {
-              println(s"Blocking next page 1s start")
+              println(s"Blocking table "+tablename+"  next page 1s start")
               TimeUnit.SECONDS.sleep(1)
-              println(s"Blocking next page 1s finished")
+              println(s"Blocking table "+tablename+"  next page 1s finished")
               //同步时只考虑insert
               if(is_just_insert){
                 self !(BYOFFSET_INSERT,%(var)ss)
@@ -56,9 +56,9 @@ class %(class)sActor extends Actor {
           }else{
             //拿到底了
             Future {
-              println(s"Blocking future 5m start")
+              println(s"Blocking table "+tablename+"  future 5m start")
               TimeUnit.MINUTES.sleep(5)
-              println(s"Blocking future 5m finished")
+              println(s"Blocking table "+tablename+"  future 5m finished")
               self !(BYOFFSET_GET,lastid)
             }
           }
@@ -67,7 +67,7 @@ class %(class)sActor extends Actor {
     }
     //  插入数据
     case (BYOFFSET_INSERT,%(var)ss:List[%(class)s])=>{
-      println("insert start",%(var)ss.length)
+      println("table "+tablename+"  insert start",%(var)ss.length)
       val %(var)s = TableQuery[%(class)ss]
       %(var)s.++=(%(var)ss.map(a=>{
         %(class)s.unapply(a).get
@@ -80,7 +80,7 @@ class %(class)sActor extends Actor {
       )
       DEST_DB.run(insertActions).onComplete(data=>{
        if (data.isSuccess){
-        println("insert data result",data)
+        println("table "+tablename+"  insert data result",data)
         //添加成功后更新last表
          val lastid=%(var)ss.last.id
          Sync.lastActor !(BYOFFSET_UPSERT_OFFSET,tablename,lastid)
@@ -102,7 +102,7 @@ class %(class)sActor extends Actor {
       DEST_DB.run(insertOrUpdateAction).onComplete(data=>{
 
        if (data.isSuccess){
-        println("insertOnDuplicateKey data result",data)
+        println("table "+tablename+"  insertOnDuplicateKey data result",data)
         //添加成功后更新last表
         val lastid=%(var)ss.last.id
         Sync.lastActor !(BYOFFSET_UPSERT_OFFSET,tablename,lastid)
@@ -119,7 +119,7 @@ class %(class)sActor extends Actor {
       val inserts: Seq[DBIO[Int]] = %(var)ss.map(buildInsert)
       val combined: DBIO[Seq[Int]] = DBIO.sequence(inserts)
       DEST_DB.run(combined).onComplete(data=>{
-        println("insertOnDuplicateKey data result",data.get.mkString)
+        println("table "+tablename+"  insertOnDuplicateKey data result",data.get.mkString)
         if (data.isSuccess){
           println(data.get)
           //添加成功后更新last表
@@ -132,14 +132,14 @@ class %(class)sActor extends Actor {
     }    
 
     case BYOFFSET_TASK_START=>{
-      println("table %(class)s start")
+      println("table "+tablename+"  table %(class)s start")
       println(sender())
       println(sender().path)
       Sync.lastActor !(BYOFFSET_OFFSET_FROM_HISTORY_RECORD,tablename)
     }
 
     case (BYOFFSET_OFFSET_FROM_DESTTABLE,lastid:Int)=>{
-      println("last table",lastid)
+      println("table "+tablename+"  last table",lastid)
       //为0或没到拿（异常）
       if (lastid==0){
         val %(var)ss = TableQuery[%(class)ss]
@@ -156,16 +156,16 @@ class %(class)sActor extends Actor {
             }
           }else{
             Future {
-              println(s"Blocking future start ")
+              println(s"Blocking table "+tablename+"  future start ")
               TimeUnit.MINUTES.sleep(5)
-              println(s"Blocking future finished ")
-              println("aa",data.get.get)
+              println(s"Blocking table "+tablename+"  future finished ")
+              println("table "+tablename+"  aa",data.get.get)
               self !(BYOFFSET_OFFSET_FROM_DESTTABLE,data.get.get)
             }
           }
         })
       }else{
-        println("sync ",lastid)
+        println("table "+tablename+"  sync ",lastid)
         self !(BYOFFSET_GET,lastid)
       }
     }
@@ -189,8 +189,8 @@ class %(class)sActor extends Actor {
           action.onComplete(data=>{
             if (data.isSuccess){
               val destnowrecoreds=data.get.map(c =>%(class)s.tupled(c))
-              println("records records",records.length)
-              println("destnowrecoreds records",destnowrecoreds.length)
+              println("table "+tablename+"  records records",records.length)
+              println("table "+tablename+"  destnowrecoreds records",destnowrecoreds.length)
               //拿出源里有，但目的时目前没有的。
               val nohasrecords=records.filter(record=>{
                 //目标里是否存在当前项
@@ -199,18 +199,18 @@ class %(class)sActor extends Actor {
                   (a.id==record.id)
                 })
               })
-              println("nohasrecords records",nohasrecords.length)
+              println("table "+tablename+"  nohasrecords records",nohasrecords.length)
               self !(ONCEALL_INSERT,nohasrecords)
             }
           })
         }
     //  从这个id开始后移拿数不段循环直到拿全（数据量较小，内存可以承受）
     case (ONCEALL_GET,offset:Int,records:List[%(class)s]) => {
-      println("sync by",offset)
+      println("table "+tablename+"  sync by",offset)
       val %(var)ss = TableQuery[%(class)ss]
       val action=ORIGIN_DB.run(%(var)ss.drop(offset).take(PAGE_SIZE).result)
       action.onComplete(data=>{
-        println("sync get data",data.get.length)
+        println("table "+tablename+"  sync get data",data.get.length)
         if (data.isSuccess){
           val %(var)ss=data.get.toList.map(a=>{
             %(class)s.tupled(a)
@@ -231,7 +231,7 @@ class %(class)sActor extends Actor {
     }
     //  插入数据
     case (ONCEALL_INSERT,%(var)ss:List[%(class)s])=>{
-      println("insert start",%(var)ss.length)
+      println("table "+tablename+"  insert start",%(var)ss.length)
       val %(var)s = TableQuery[%(class)ss]
       %(var)s.++=(%(var)ss.map(a=>{
         %(class)s.unapply(a).get
@@ -242,11 +242,11 @@ class %(class)sActor extends Actor {
         }))
       )
       DEST_DB.run(insertActions).onComplete(data=>{
-        println("insert data result",data)
+        println("table "+tablename+"  insert data result",data)
         Future {
-          println(s"Blocking future 12h start")
+          println(s"Blocking table "+tablename+"  future 12h start")
           TimeUnit.HOURS.sleep(12)
-          println(s"Blocking future 12h finished")
+          println(s"Blocking table "+tablename+"  future 12h finished")
           self !ONCEALL_TASK_START
         }
       })
