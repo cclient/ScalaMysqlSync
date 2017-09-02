@@ -160,7 +160,7 @@ class %(class)sActor extends Actor {
               TimeUnit.MINUTES.sleep(5)
               println(s"Blocking table "+tablename+"  future finished ")
               println("table "+tablename+"  aa",data.get.get)
-              self !(BYOFFSET_OFFSET_FROM_DESTTABLE,data.get.get)
+              self !(BYOFFSET_OFFSET_FROM_DESTTABLE,lastid)
             }
           }
         })

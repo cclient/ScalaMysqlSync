@@ -165,7 +165,7 @@ class WordActor extends Actor {
               TimeUnit.MINUTES.sleep(5)
               println(s"Blocking future finished ")
               println("aa",data.get.get)
-              self !(BYOFFSET_OFFSET_FROM_DESTTABLE,data.get.get)
+              self !(BYOFFSET_OFFSET_FROM_DESTTABLE,lastid)
             }
           }
         })
