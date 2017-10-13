@@ -74,12 +74,8 @@ class WordActor extends Actor {
     case (BYOFFSET_INSERT,words:List[Word])=>{
       println("insert start",words.length)
       val word = TableQuery[Words]
-      word.++=(words.map(a=>{
-        Word.unapply(a).get
-      }))
-      //Word.+=(Word.unapply(words.head).get)
       val insertActions = DBIO.seq(
-        word.++=(words.map(a=>{
+        word++=(words.map(a=>{
           Word.unapply(a).get
         }))
       )

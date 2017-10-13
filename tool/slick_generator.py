@@ -69,12 +69,8 @@ class %(class)sActor extends Actor {
     case (BYOFFSET_INSERT,%(var)ss:List[%(class)s])=>{
       println("table "+tablename+"  insert start",%(var)ss.length)
       val %(var)s = TableQuery[%(class)ss]
-      %(var)s.++=(%(var)ss.map(a=>{
-        %(class)s.unapply(a).get
-      }))
-      //%(class)s.+=(%(class)s.unapply(%(var)ss.head).get)
       val insertActions = DBIO.seq(
-        %(var)s.++=(%(var)ss.map(a=>{
+        %(var)s++=(%(var)ss.map(a=>{
           %(class)s.unapply(a).get
         }))
       )
